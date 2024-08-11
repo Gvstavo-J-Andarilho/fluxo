@@ -105,7 +105,7 @@ class aplicacao(Funcoes):
         self.lb_ano = Label(self.frame_1, text="Ano", bg='#436778')
         self.lb_ano.place(relx=0.65, rely=0.15)
         # Combobox ano
-        self.ano_combo = ttk.Combobox(self.frame_1, values=[str(i) for i in range(2020, 2030)], state="readonly")
+        self.ano_combo = ttk.Combobox(self.frame_1, values=[str(i) for i in range(2020, 2031)], state="readonly")
         self.ano_combo.place(relx=0.65, rely=0.30, relwidth=0.10, relheight=0.10)
 
 
