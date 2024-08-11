@@ -1,8 +1,19 @@
 from tkinter import *
 from tkinter import ttk
 
+
 janela = Tk()
-class aplicacao():
+
+class Funcoes():
+    def apagar_tela(self):
+        self.buscar_entry.delete(0, END)
+        self.valor_entry.delete(0, END)
+        self.nome_entry.delete(0, END)
+        self.dia_entry.delete(0, END)
+        self.mes_entry.delete(0, END)
+        self.ano_entry.delete(0, END)
+
+class aplicacao(Funcoes):
     def __init__(self):
         self.janela = janela
         self .tela()
@@ -36,7 +47,7 @@ class aplicacao():
         self.bot_buscar.place(relx=0.3, rely=0.80, relwidth=0.1, relheight=0.12)
 
         # botão apagar
-        self.bot_apagar = Button(self.frame_1, text="APAGAR", bd=2, bg='#abcad9',fg="black", font=("verdana", 8, "bold"))
+        self.bot_apagar = Button(self.frame_1, text="APAGAR", bd=2, bg='#abcad9', fg="black", font=("verdana", 8, "bold"), command=self.apagar_tela)
         self.bot_apagar.place(relx=0.5, rely=0.80, relwidth=0.1, relheight=0.12)
 
         # botão editar
@@ -107,6 +118,7 @@ class aplicacao():
         self.lanca_frame2.heading("#3", text="Nome")
         self.lanca_frame2.heading("#4", text="Saldo")
 
+        #tamanho das colunas de lançamento
         self.lanca_frame2.column("#0", width = 150)
         self.lanca_frame2.column("#1", width=100)
         self.lanca_frame2.column("#2", width=50)
@@ -114,5 +126,10 @@ class aplicacao():
         self.lanca_frame2.column("#4", width=30)
 
         self.lanca_frame2.place(relx=0.01, rely=0.1, relwidth=0.95,relheight=0.85)
+
+        self.scrollLista = Scrollbar(self.frame_2, orient="vertical")
+        self.lanca_frame2.configure(yscroll=self.scrollLista.set)
+        self.scrollLista.place(relx = 0.96, rely=0.1, relwidth=0.03, relheight=.85)
+
 
 aplicacao()
