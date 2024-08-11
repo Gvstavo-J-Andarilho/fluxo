@@ -9,9 +9,9 @@ class Funcoes():
         self.buscar_entry.delete(0, END)
         self.valor_entry.delete(0, END)
         self.nome_entry.delete(0, END)
-        self.dia_entry.delete(0, END)
-        self.mes_entry.delete(0, END)
-        self.ano_entry.delete(0, END)
+        self.dia_combo.set('')  # Limpa a seleção do Combobox
+        self.mes_combo.set('')  # Limpa a seleção do Combobox
+        self.ano_combo.set('')  # Limpa a seleção do Combobox
 
 class aplicacao(Funcoes):
     def __init__(self):
@@ -90,23 +90,23 @@ class aplicacao(Funcoes):
         # label dia
         self.lb_dia = Label(self.frame_1, text="Dia", bg='#436778')
         self.lb_dia.place(relx=0.45, rely=0.15)
-        # entrada dia
-        self.dia_entry = Entry(self.frame_1)
-        self.dia_entry.place(relx=0.45, rely=0.30, relwidth=0.05, relheight=0.10)
+        # Combobox dia
+        self.dia_combo = ttk.Combobox(self.frame_1, values=[str(i).zfill(2) for i in range(1, 32)], state="readonly")
+        self.dia_combo.place(relx=0.45, rely=0.30, relwidth=0.05, relheight=0.10)
 
         # label mês
         self.lb_mes = Label(self.frame_1, text="Mês", bg='#436778')
         self.lb_mes.place(relx=0.55, rely=0.15)
-        # entrada mês
-        self.mes_entry = Entry(self.frame_1)
-        self.mes_entry.place(relx=0.55, rely=0.30, relwidth=0.05, relheight=0.10)
+        # Combobox mês
+        self.mes_combo = ttk.Combobox(self.frame_1, values=[str(i).zfill(2) for i in range(1, 13)], state="readonly")
+        self.mes_combo.place(relx=0.55, rely=0.30, relwidth=0.05, relheight=0.10)
 
         # label ano
         self.lb_ano = Label(self.frame_1, text="Ano", bg='#436778')
         self.lb_ano.place(relx=0.65, rely=0.15)
-        # entrada ano
-        self.ano_entry = Entry(self.frame_1)
-        self.ano_entry.place(relx=0.65, rely=0.30, relwidth=0.10, relheight=0.10)
+        # Combobox ano
+        self.ano_combo = ttk.Combobox(self.frame_1, values=[str(i) for i in range(2020, 2030)], state="readonly")
+        self.ano_combo.place(relx=0.65, rely=0.30, relwidth=0.10, relheight=0.10)
 
 
 #criação das listas de lançamento
