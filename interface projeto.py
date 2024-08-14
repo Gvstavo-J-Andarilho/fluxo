@@ -2,14 +2,63 @@ from tkinter import *
 from tkinter import ttk
 from tkcalendar import Calendar
 from datetime import datetime
-
+import sqlite3
 
 class Funcoes():
     def apagar_tela(self):
         self.buscar_entry.delete(0, END)
         self.valor_entry.delete(0, END)
         self.nome_entry.delete(0, END)
-        self.data_entry.delete(0, END)
+
+
+
+    def conecta_bd(self):
+        self.conec = sqlite3.connect("clientes.bd")
+        self.cursor = self.conec.cursor()
+    def desconectar_bd(self):
+        self.conec.close()
+        #self.select_lista()
+        #self.apagar_tela()
+
+    def montaTabelas(self):
+        self.conecta_bd(); print("Conectando banco de dados")
+        ###   Criar tabela
+        self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS lancamento (
+            data TEXT NOT NULL,
+            valor REAL NOT NULL,
+            tipo TEXT NOT NULL,
+            nome TEXT,
+            saldo REAL
+            
+         
+        );
+    """)
+        self.conec.commit(); print("Banco de dados criado")
+        self.desconectar_bd; print("Banco de dados desconectado")
+
+    def add_lancamento(self):
+        self.valor = self.valor_entry.get()
+        self.data =  self.data_numerica
+        self.nome = self.nome_entry
+        self.conecta_bd()
+
+        self.cursor.execute(""" INSERT INTO lancamento (data, valor, tipo, nome, saldo) 
+        VALUES(?,?,?,?)""",(self.data, self.valor, self.tipo, self.nome, self.saldo))
+        self.conec.commit()
+        self.desconectar_bd()
+
+    def select_lista(self):
+        self.lanca_frame2.delete(
+            *self.lanca_frame2.get_children())
+        self.conecta_bd()
+        lista = self.cursor.execute(""" SELECT data, valor, tipo, nome, saldo FROM lancamento
+          ORDER BY nome ASC; """)
+        for i in lista:
+            self.lanca_frame2.insert("", END, values=i)
+        self.desconectar_bd()
+
+
 
 
 class aplicacao(Funcoes):
@@ -25,10 +74,17 @@ class aplicacao(Funcoes):
         self.frames_da_tela()
         self.botoesFrame_1()
         self.lista_frame2()
+        self.montaTabelas()
+        self.data_numerica = None
+        self.calendario_app = None
+        self.select_lista()
 
-        self.calendario_app = None  # Instância do calendário será armazenada aqui
 
         self.janela.mainloop()
+
+    def abrir_calendario(self):
+        # Inicializa a aplicação do calendário dentro da janela principal
+        self.calendario_app = AplicacaoCalendario(self.janela, self)
 
     def frames_da_tela(self): #frame = retangulos da tela
         #tela de cima
@@ -39,7 +95,7 @@ class aplicacao(Funcoes):
         self.frame_2.place(relx=0.02, rely=0.50, relwidth=0.96, relheight=0.40)
 
     def botoesFrame_1(self): #botão adicionar
-        self.bot_adicionar = Button(self.frame_1, text="ADICIONAR", bd=2, bg='#abcad9', fg="black", font=("verdana", 8, "bold"))
+        self.bot_adicionar = Button(self.frame_1, text="ADICIONAR", bd=2, bg='#abcad9', fg="black", font=("verdana", 8, "bold"), command = self.add_lancamento)
         self.bot_adicionar.place(relx=0.1, rely=0.80, relwidth=0.12, relheight=0.12)
 
         # botão buscar
@@ -47,7 +103,7 @@ class aplicacao(Funcoes):
         self.bot_buscar.place(relx=0.3, rely=0.80, relwidth=0.1, relheight=0.12)
 
         # botão apagar
-        self.bot_apagar = Button(self.frame_1, text="APAGAR", bd=2, bg='#abcad9', fg="black", font=("verdana", 8, "bold"), command=self.apagar_tela)
+        self.bot_apagar = Button(self.frame_1, text="APAGAR", bd=2, bg='#abcad9', fg="black", font=("verdana", 8, "bold"), command = self.apagar_tela)
         self.bot_apagar.place(relx=0.5, rely=0.80, relwidth=0.1, relheight=0.12)
 
         # botão editar
@@ -79,6 +135,7 @@ class aplicacao(Funcoes):
         # Label nome
         self.lb_nome = Label(self.frame_1, text="Nome", bg='#436778', fg="black", font=("verdana", 11, "bold"))
         self.lb_nome.place(relx=0.15, rely=0.15)
+
         # Texto da nome
         self.nome_entry = Entry(self.frame_1)
         self.nome_entry.place(relx=0.15, rely=0.30, relwidth=0.25, relheight=0.10)
@@ -110,14 +167,13 @@ class aplicacao(Funcoes):
         self.lanca_frame2.configure(yscroll=self.scrollLista.set)
         self.scrollLista.place(relx=0.96, rely=0.1, relwidth=0.03, relheight=.85)
 
-    def abrir_calendario(self):
-        # Inicializa a aplicação do calendário dentro da janela principal
-        self.calendario_app = AplicacaoCalendario(self.janela)
 
-# Classe do calendário que será chamada na aplicação principal
+
+# Classe do calendário para chamar na principal
 class AplicacaoCalendario:
-    def __init__(self, root):
+    def __init__(self, root, app_ref):
         self.root = root
+        self.app_ref = app_ref  # Referência para a classe principal
         self.mostrar_calendario()
 
     def mostrar_calendario(self):
@@ -125,14 +181,16 @@ class AplicacaoCalendario:
         mes_atual = hoje.month
         ano_atual = hoje.year
         self.calendario = Calendar(self.root, selectmode='day', locale='pt_br', year=ano_atual, month=mes_atual, day=hoje.day)
-        self.calendario.place(relx=0.5, rely=0.5, anchor="center")
+        self.calendario.place(relx=0.75, rely=0.30, anchor="center")
         self.calendario.bind("<<CalendarSelected>>", self.coletar_data)
 
     def coletar_data(self, event):
         data_selecionada = self.calendario.get_date()
         data_numerica = datetime.strptime(data_selecionada, "%d/%m/%Y").strftime("%d/%m/%Y")
         print(data_numerica)
+        self.app_ref.data_numerica = data_numerica  # Armazena a data na instância principal
         self.calendario.destroy()
+
 
 # Inicializa a aplicação principal
 aplicacao()
