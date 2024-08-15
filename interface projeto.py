@@ -56,6 +56,8 @@ class Funcoes():
         saldo_atual = resultado[0] if resultado else 0
 
         self.valor = float(self.valor_entry.get().replace(",", "."))
+        self.valor = round(self.valor,2)
+        print(round(self.valor,2))
         self.nome = self.nome_entry.get()
 
         if self.tipo_lancamento == "entrada":
