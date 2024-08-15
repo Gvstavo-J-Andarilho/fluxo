@@ -73,7 +73,11 @@ class Funcoes():
         self.conec.commit()
         self.desconectar_bd()
         self.select_lista()  # Atualiza a lista com o novo saldo
-
+        self.apagar_tela()
+        self.bot_entrada.config(state=NORMAL)
+        self.bot_saida.config(state=NORMAL)
+        self.bot_data.config(state=NORMAL)
+        self.bot_adicionar.config(state=NORMAL)
     def select_lista(self):
         self.lanca_frame2.delete(
             *self.lanca_frame2.get_children())
@@ -116,11 +120,13 @@ class aplicacao(Funcoes):
         self.bot_saida.config(state=DISABLED)
         self.bot_adicionar.config(state=NORMAL)
 
+
     def definir_tipo_saida(self):
         self.tipo_lancamento = "saida"
         self.bot_entrada.config(state=DISABLED)
         self.bot_saida.config(state=DISABLED)
         self.bot_adicionar.config(state=NORMAL)
+
 
     def frames_da_tela(self):  # frame = retangulos da tela
         # tela de cima
