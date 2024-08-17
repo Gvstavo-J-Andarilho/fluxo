@@ -5,13 +5,25 @@ from datetime import datetime
 from tkinter import messagebox
 import sqlite3
 
+# Criar o Cod com enumerate de cada lançamento e fazer a exclusão da forma correta
+# Parar o "adicionar" até que seja lançado todos os dados
+# criar a função do botão de editar
+# criar a função do botão de buscar
+
+
 
 class Funcoes():
-    def apagar_tela(self): #função para limpar os dados da tela
+    def apagar_tela(self): #função para limpar os dados da tela "limparCliente"/
         self.buscar_entry.delete(0, END)
         self.valor_entry.delete(0, END)
         self.nome_entry.delete(0, END)
-
+        self.data_numerica = None
+        self.calendario_app = None
+        self.tipo_lancamento = None
+        self.bot_entrada.config(state=NORMAL)
+        self.bot_saida.config(state=NORMAL)
+        self.bot_data.config(state=NORMAL)
+        self.bot_adicionar.config(state=NORMAL)
 
     def conecta_bd(self):
         self.conec = sqlite3.connect("clientes.bd")
@@ -106,6 +118,29 @@ class Funcoes():
             self.lanca_frame2.insert("", END, values=i)
         self.desconectar_bd()
 
+    def DoubleClick(self, event):
+        self.apagar_tela()
+        self.lanca_frame2.selection()
+
+        for n in self.lanca_frame2.selection():
+            col1, col2, col3, col4, col5 = self.lanca_frame2.item(n, 'values')
+            #col2 reativar o botão de data
+            self.valor_entry.insert(END, col2)
+            #col4 reativar botão esoclher entrada
+            self.nome_entry.insert(END, col4)
+
+    def deleta_cliente(self):
+        self.valor_entry.get
+        self.nome_entry.get
+        self.conecta_bd()
+
+        self.cursor.execute(""""DELETE FROM clientes WHERE cod = ? """, f"{self.codigo}")
+        self.conec.commit()
+
+        self.desconectar_bd()
+        self.apagar_tela()
+        self.select_lista()
+
 
 class aplicacao(Funcoes):
     def __init__(self):
@@ -128,9 +163,11 @@ class aplicacao(Funcoes):
 
         self.janela.mainloop()
 
+
     def abrir_calendario(self):
         # Inicializa a aplicação do calendário dentro da janela principal
         self.calendario_app = AplicacaoCalendario(self.janela, self)
+
 
     def definir_tipo_entrada(self):
         self.tipo_lancamento = "entrada"
@@ -174,6 +211,11 @@ class aplicacao(Funcoes):
                                  font=("verdana", 8, "bold"))
         self.bot_editar.place(relx=0.7, rely=0.80, relwidth=0.1, relheight=0.12)
 
+        # botão excluir
+        self.bot_excluir = Button(self.frame_1, text="EXCLUIR", bd=2, bg='#eb383e', fg="black",
+                                 font=("verdana", 8, "bold"), command= self.deleta_cliente)
+        self.bot_excluir.place(relx=0.85, rely=0.80, relwidth=0.1, relheight=0.12)
+
         # botão entrada
         self.bot_entrada = Button(self.frame_1, text="INSERIR ENTRADA", bd=2, bg='#48ab4d', fg="black",
                                   font=("verdana", 8, "bold"), command=self.definir_tipo_entrada)
@@ -213,7 +255,7 @@ class aplicacao(Funcoes):
         self.valor_entry = Entry(self.frame_1)
         self.valor_entry.place(relx=0.40, rely=0.53, relwidth=0.15, relheight=0.10)
 
-    def lista_frame2(self):
+    def lista_frame2(self): #listaCli é a primeira variável abaixo
         self.lanca_frame2 = ttk.Treeview(self.frame_2, height=3, column=("col1", "col2", "col3", "col4", "col5"))
         self.lanca_frame2.heading("#0", text="")
         self.lanca_frame2.heading("#1", text="Data")
@@ -234,6 +276,7 @@ class aplicacao(Funcoes):
         self.scrollLista = Scrollbar(self.frame_2, orient="vertical")
         self.lanca_frame2.configure(yscroll=self.scrollLista.set)
         self.scrollLista.place(relx=0.96, rely=0.1, relwidth=0.03, relheight=.85)
+        self.lanca_frame2.bind("<Double-1>", self.DoubleClick)
 
 
 # Classe do calendário para chamar na principal
