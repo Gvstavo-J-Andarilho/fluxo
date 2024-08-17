@@ -2,14 +2,16 @@ from tkinter import *
 from tkinter import ttk
 from tkcalendar import Calendar
 from datetime import datetime
+from tkinter import messagebox
 import sqlite3
 
 
 class Funcoes():
-    def apagar_tela(self):
+    def apagar_tela(self): #função para limpar os dados da tela
         self.buscar_entry.delete(0, END)
         self.valor_entry.delete(0, END)
         self.nome_entry.delete(0, END)
+
 
     def conecta_bd(self):
         self.conec = sqlite3.connect("clientes.bd")
@@ -41,9 +43,23 @@ class Funcoes():
         print("Banco de dados desconectado")
 
     def add_lancamento(self):
+
+        #tratamento de erros:
         if not self.data_numerica:
             # Se a data não foi selecionada, exiba uma mensagem de erro
-            print("Erro: Data não selecionada.")
+            messagebox.showerror("Erro: Data", detail='Escolha a data do lançamento no botão "Data" para escolher o dia do lançamento')
+            self.apagar_tela()
+
+        # valor = self.valor_entry.get()
+        # if not valor.isnumeric():
+        #     messagebox.showerror("Erro: Valor", detail='Coloque apenas números em "Valor"')
+        #     self.apagar_tela()
+
+        nome_entrada=self.nome_entry.get()
+        nome_entrada= nome_entrada.replace(" ","")
+        if not nome_entrada.isalpha():
+            messagebox.showerror("Erro: Nome", detail='Coloque apenas letras em "Nome"')
+            self.apagar_tela()
             return
 
         self.conecta_bd()
@@ -54,7 +70,7 @@ class Funcoes():
 
         # Se houver registros, pega o saldo atual; caso contrário, começa com 0
         saldo_atual = resultado[0] if resultado else 0
-
+        print(type(self.valor_entry))
         self.valor = float(self.valor_entry.get().replace(",", "."))
         self.valor = round(self.valor,2)
         print(round(self.valor,2))
@@ -62,8 +78,10 @@ class Funcoes():
 
         if self.tipo_lancamento == "entrada":
             saldo_atual += self.valor
+            saldo_atual = round(saldo_atual, 2)
         elif self.tipo_lancamento == "saida":
             saldo_atual -= self.valor
+            saldo_atual = round(saldo_atual, 2)
 
         # Insere o novo lançamento com o saldo atualizado
         self.cursor.execute(""" 
