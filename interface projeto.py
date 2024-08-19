@@ -40,15 +40,15 @@ class Funcoes():
         ###   Criar tabela
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS lancamento (
+            codigo INTEGER PRIMARY KEY AUTOINCREMENT,
             data TEXT NOT NULL,
             valor REAL NOT NULL,
             tipo TEXT NOT NULL,
             nome TEXT,
             saldo REAL
-
-
         );
-    """)
+        """)
+
         self.conec.commit();
         print("Banco de dados criado")
         self.desconectar_bd;
@@ -67,8 +67,8 @@ class Funcoes():
         #     messagebox.showerror("Erro: Valor", detail='Coloque apenas números em "Valor"')
         #     self.apagar_tela()
 
-        nome_entrada=self.nome_entry.get()
-        nome_entrada= nome_entrada.replace(" ","")
+        nome_entrada = self.nome_entry.get()
+        nome_entrada = nome_entrada.replace(" ","")
         if not nome_entrada.isalpha():
             messagebox.showerror("Erro: Nome", detail='Coloque apenas letras em "Nome"')
             self.apagar_tela()
@@ -108,38 +108,106 @@ class Funcoes():
         self.bot_saida.config(state=NORMAL)
         self.bot_data.config(state=NORMAL)
         self.bot_adicionar.config(state=NORMAL)
+        self.ultima_linha = None
+
+
     def select_lista(self):
-        self.lanca_frame2.delete(
-            *self.lanca_frame2.get_children())
+        self.lanca_frame2.delete(*self.lanca_frame2.get_children())
         self.conecta_bd()
-        lista = self.cursor.execute(""" SELECT data, valor, tipo, nome, saldo FROM lancamento
-          ORDER BY nome ASC; """)
+        lista = self.cursor.execute("""
+        SELECT codigo, data, valor, tipo, nome, saldo FROM lancamento
+        ORDER BY codigo ASC;
+        """)
         for i in lista:
             self.lanca_frame2.insert("", END, values=i)
         self.desconectar_bd()
 
     def DoubleClick(self, event):
-        self.apagar_tela()
-        self.lanca_frame2.selection()
+        item_selecionado = self.lanca_frame2.selection()
 
-        for n in self.lanca_frame2.selection():
-            col1, col2, col3, col4, col5 = self.lanca_frame2.item(n, 'values')
-            #col2 reativar o botão de data
-            self.valor_entry.insert(END, col2)
-            #col4 reativar botão esoclher entrada
-            self.nome_entry.insert(END, col4)
+        # Verifica se o item selecionado é o mesmo que o anterior
+        if self.ultima_linha == item_selecionado:
+            return
+
+        self.ultima_linha = item_selecionado
+
+        self.apagar_tela()
+
+        for n in item_selecionado:
+            col1, col2, col3, col4, col5, col6 = self.lanca_frame2.item(n, 'values')  # Seis variáveis para seis colunas
+            self.codigo = col1
+            self.valor_entry.insert(END, col3)
+            self.nome_entry.insert(END, col5)
+
+            # Definir o tipo de lançamento
+            if col4 == "entrada":
+                self.definir_tipo_entrada()
+            elif col4 == "saida":
+                self.definir_tipo_saida()
+
+            # Armazenar e mostrar a data
+            self.data_numerica = col2
+            self.bot_data.config(text=self.data_numerica, font=("verdana", 6,"bold"))
+
+            # Desabilitar os botões novamente após carregar o lançamento
+            self.bot_entrada.config(state=NORMAL)
+            self.bot_saida.config(state=NORMAL)
+            self.bot_data.config(state=NORMAL)
 
     def deleta_cliente(self):
-        self.valor_entry.get
-        self.nome_entry.get
+        try:
+            self.conecta_bd()
+
+            self.cursor.execute("DELETE FROM lancamento WHERE codigo = ?", (self.codigo,))
+            self.conec.commit()
+
+            self.desconectar_bd()
+            self.apagar_tela()
+            self.select_lista()
+            # Reseta a última linha clicada
+            self.ultima_linha = None
+
+        except AttributeError:
+            messagebox.showerror("Erro", "Selecione um item para excluir")
+
+    def editar_cliente(self):
+        # Variáveis:
+        nome = self.nome_entry.get()
+        data_numerica = self.data_numerica
+        codigo = self.codigo
+        tipo_lancamento = self.tipo_lancamento
+
+        # Verifica se o valor foi preenchido
+        valor_texto = self.valor_entry.get()
+        if not valor_texto.strip():
+            messagebox.showerror("Erro: Valor", "O campo 'Valor' não pode estar vazio.")
+            return
+
+        # Convertendo o valor de texto para float
+        try:
+            valor = float(valor_texto.replace(",", "."))
+            valor = round(valor, 2)
+        except ValueError:
+            messagebox.showerror("Erro: Valor", "O valor inserido é inválido.")
+            return
+
+        # Recuperar o saldo atual
         self.conecta_bd()
+        self.cursor.execute("SELECT saldo FROM lancamento WHERE codigo = ?", (codigo,))
+        saldo_atual = self.cursor.fetchone()[0]
 
-        self.cursor.execute(""""DELETE FROM clientes WHERE cod = ? """, f"{self.codigo}")
+        # Atualiza o registro no banco de dados
+        self.cursor.execute("""
+            UPDATE lancamento 
+            SET data = ?, valor = ?, tipo = ?, nome = ?, saldo = ? 
+            WHERE codigo = ?""", (data_numerica, valor, tipo_lancamento, nome, saldo_atual, codigo))
+
         self.conec.commit()
-
         self.desconectar_bd()
-        self.apagar_tela()
         self.select_lista()
+        self.apagar_tela()
+
+
 
 
 class aplicacao(Funcoes):
@@ -156,6 +224,7 @@ class aplicacao(Funcoes):
         self.botoesFrame_1()
         self.lista_frame2()
         self.montaTabelas()
+        self.ultima_linha = None  # Armazena a última linha clicada
         self.data_numerica = None
         self.calendario_app = None
         self.tipo_lancamento = None
@@ -208,7 +277,7 @@ class aplicacao(Funcoes):
 
         # botão editar
         self.bot_editar = Button(self.frame_1, text="EDITAR", bd=2, bg='#abcad9', fg="black",
-                                 font=("verdana", 8, "bold"))
+                                 font=("verdana", 8, "bold"), command= self.editar_cliente)
         self.bot_editar.place(relx=0.7, rely=0.80, relwidth=0.1, relheight=0.12)
 
         # botão excluir
@@ -255,21 +324,24 @@ class aplicacao(Funcoes):
         self.valor_entry = Entry(self.frame_1)
         self.valor_entry.place(relx=0.40, rely=0.53, relwidth=0.15, relheight=0.10)
 
-    def lista_frame2(self): #listaCli é a primeira variável abaixo
-        self.lanca_frame2 = ttk.Treeview(self.frame_2, height=3, column=("col1", "col2", "col3", "col4", "col5"))
+    def lista_frame2(self):
+        self.lanca_frame2 = ttk.Treeview(self.frame_2, height=3,
+                                         column=("col1", "col2", "col3", "col4", "col5", "col6"))
         self.lanca_frame2.heading("#0", text="")
-        self.lanca_frame2.heading("#1", text="Data")
-        self.lanca_frame2.heading("#2", text="Valor")
-        self.lanca_frame2.heading("#3", text="Tipo")
-        self.lanca_frame2.heading("#4", text="Nome")
-        self.lanca_frame2.heading("#5", text="Saldo")
+        self.lanca_frame2.heading("#1", text="Código")
+        self.lanca_frame2.heading("#2", text="Data")
+        self.lanca_frame2.heading("#3", text="Valor")
+        self.lanca_frame2.heading("#4", text="Tipo")
+        self.lanca_frame2.heading("#5", text="Nome")
+        self.lanca_frame2.heading("#6", text="Saldo")
 
-        self.lanca_frame2.column("#0", width=0, stretch=NO)  # Coluna escondida
-        self.lanca_frame2.column("#1", width=150)
-        self.lanca_frame2.column("#2", width=100)
-        self.lanca_frame2.column("#3", width=50)
-        self.lanca_frame2.column("#4", width=150)
-        self.lanca_frame2.column("#5", width=100)
+        self.lanca_frame2.column("#0", width=0, stretch=NO)
+        self.lanca_frame2.column("#1", width=50)
+        self.lanca_frame2.column("#2", width=150)
+        self.lanca_frame2.column("#3", width=100)
+        self.lanca_frame2.column("#4", width=50)
+        self.lanca_frame2.column("#5", width=150)
+        self.lanca_frame2.column("#6", width=100)
 
         self.lanca_frame2.place(relx=0.01, rely=0.1, relwidth=0.95, relheight=0.85)
 
