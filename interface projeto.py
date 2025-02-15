@@ -5,10 +5,13 @@ from datetime import datetime
 from tkinter import messagebox
 import sqlite3
 
-# Criar o Cod com enumerate de cada lançamento e fazer a exclusão da forma correta
-# Parar o "adicionar" até que seja lançado todos os dados
-# criar a função do botão de editar
-# criar a função do botão de buscar
+
+#Criar um dashBoard para juntar as outras janelas
+#Fazer a parte estatistica de série temporal ficar a mostra no dashBoard
+#Botão de relatório, .xlsx para salvar
+#corrigir bugs do projeto
+
+
 
 
 
@@ -312,7 +315,8 @@ class aplicacao(Funcoes):
         self.frame_2 = Frame(self.janela, bd=4, bg='#436778', highlightbackground='#2c4c5c', highlightthickness=3)
         self.frame_2.place(relx=0.02, rely=0.50, relwidth=0.96, relheight=0.40)
 
-    def botoesFrame_1(self):  # botão adicionar
+    def botoesFrame_1(self):
+        # botão adicionar
         self.bot_adicionar = Button(self.frame_1, text="ADICIONAR", bd=2, bg='#abcad9', fg="black",
                                     font=("verdana", 8, "bold"), command=self.add_lancamento)
         self.bot_adicionar.place(relx=0.1, rely=0.80, relwidth=0.12, relheight=0.12)
@@ -321,6 +325,7 @@ class aplicacao(Funcoes):
         self.bot_buscar = Button(self.frame_1, text="BUSCAR", bd=2, bg='#abcad9', fg="black",
                                  font=("verdana", 8, "bold"), command=self.buscar_lancamentos)
         self.bot_buscar.place(relx=0.3, rely=0.80, relwidth=0.1, relheight=0.12)
+
 
         # botão apagar
         self.bot_apagar = Button(self.frame_1, text="APAGAR", bd=2, bg='#abcad9', fg="black",
@@ -362,11 +367,12 @@ class aplicacao(Funcoes):
         # Texto da busca
         self.buscar_entry = Entry(self.frame_1)
         self.buscar_entry.place(relx=0.01, rely=0.15, relwidth=0.1, relheight=0.10)
+        # Associa a tecla Enter à função de busca
+        self.buscar_entry.bind("<Return>", lambda event: self.buscar_lancamentos())
 
         # Label nome
         self.lb_nome = Label(self.frame_1, text="Nome", bg='#436778', fg="black", font=("verdana", 11, "bold"))
         self.lb_nome.place(relx=0.15, rely=0.15)
-
         # Texto da nome
         self.nome_entry = Entry(self.frame_1)
         self.nome_entry.place(relx=0.15, rely=0.30, relwidth=0.25, relheight=0.10)
