@@ -101,8 +101,8 @@ class Funcoes():
             VALUES(?,?,?,?,?)""", (self.data_numerica, self.valor, self.tipo_lancamento, self.nome, saldo_atual))
 
         self.conec.commit()
-        self.desconectar_bd()
-        self.select_lista()  # Atualiza a lista com o novo saldo
+        self.recalcular_saldos() #corrige o erro de usar saldo de lançamentos apagados
+        self.select_lista() #salva a atualização no saldo
         self.apagar_tela()
         self.bot_entrada.config(state=NORMAL)
         self.bot_saida.config(state=NORMAL)
@@ -147,7 +147,7 @@ class Funcoes():
 
             # Armazenar e mostrar a data
             self.data_numerica = col2
-            self.bot_data.config(text=self.data_numerica, font=("verdana", 6,"bold"))
+            self.bot_data.config(text=self.data_numerica, font=("verdana", 11,"bold"))
 
             # Desabilitar os botões novamente após carregar o lançamento
             self.bot_entrada.config(state=NORMAL)
@@ -161,9 +161,10 @@ class Funcoes():
             self.cursor.execute("DELETE FROM lancamento WHERE codigo = ?", (self.codigo,))
             self.conec.commit()
 
-            self.desconectar_bd()
+            self.recalcular_saldos()
             self.apagar_tela()
             self.select_lista()
+
             # Reseta a última linha clicada
             self.ultima_linha = None
 
@@ -203,11 +204,33 @@ class Funcoes():
             WHERE codigo = ?""", (data_numerica, valor, tipo_lancamento, nome, saldo_atual, codigo))
 
         self.conec.commit()
-        self.desconectar_bd()
+        self.recalcular_saldos()
         self.select_lista()
         self.apagar_tela()
 
+    def recalcular_saldos(self):
+        self.conecta_bd()
 
+        # Buscar todos os lançamentos ordenados pela data mais antiga
+        self.cursor.execute("SELECT codigo, data, valor, tipo FROM lancamento ORDER BY data ASC, codigo ASC")
+        lancamentos = self.cursor.fetchall()
+
+        saldo = 0  # Começa com saldo 0
+
+        # Percorre cada lançamento e atualiza o saldo
+        for codigo, data, valor, tipo in lancamentos:
+            if tipo == "entrada":
+                saldo += valor
+            elif tipo == "saida":
+                saldo -= valor
+
+            saldo = round(saldo, 2)  # Arredonda para evitar erros de precisão
+
+            # Atualiza o saldo no banco de dados
+            self.cursor.execute("UPDATE lancamento SET saldo = ? WHERE codigo = ?", (saldo, codigo))
+
+        self.conec.commit()
+        self.desconectar_bd()
 
 
 class aplicacao(Funcoes):
@@ -228,7 +251,9 @@ class aplicacao(Funcoes):
         self.data_numerica = None
         self.calendario_app = None
         self.tipo_lancamento = None
+        self.recalcular_saldos()
         self.select_lista()
+        self.janela.bind("<Escape>", self.atalho_esc)
 
         self.janela.mainloop()
 
@@ -237,6 +262,15 @@ class aplicacao(Funcoes):
         # Inicializa a aplicação do calendário dentro da janela principal
         self.calendario_app = AplicacaoCalendario(self.janela, self)
 
+    def atalho_esc(self, event): #Função que define o comportamento do atalho ESC
+        if self.calendario_app:
+            self.calendario_app.calendario.destroy()  # Fecha o calendário se estiver aberto
+            self.calendario_app = None
+        elif self.janela.focus_get() in [self.nome_entry, self.valor_entry, self.buscar_entry]:
+            self.janela.focus_get().delete(0, END)  # Limpa o campo de entrada
+
+        else:
+            self.janela.focus_set()  # Remove o foco de qualquer campo
 
     def definir_tipo_entrada(self):
         self.tipo_lancamento = "entrada"
@@ -251,6 +285,24 @@ class aplicacao(Funcoes):
         self.bot_saida.config(state=DISABLED)
         self.bot_adicionar.config(state=NORMAL)
 
+    def buscar_lancamentos(self):
+        termo_busca = self.buscar_entry.get()
+        self.lanca_frame2.delete(*self.lanca_frame2.get_children())
+        self.conecta_bd()
+
+        # Consulta para buscar por nome, código, valor ou data
+        query = """
+        SELECT codigo, data, valor, tipo, nome, saldo FROM lancamento 
+        WHERE nome LIKE ? OR codigo LIKE ? OR valor LIKE ? OR data LIKE ?
+        ORDER BY codigo ASC;
+        """
+        busca = f"%{termo_busca}%"
+        lista = self.cursor.execute(query, (busca, busca, busca, busca))
+
+        for i in lista:
+            self.lanca_frame2.insert("", END, values=i)
+
+        self.desconectar_bd()
 
     def frames_da_tela(self):  # frame = retangulos da tela
         # tela de cima
@@ -267,7 +319,7 @@ class aplicacao(Funcoes):
 
         # botão buscar
         self.bot_buscar = Button(self.frame_1, text="BUSCAR", bd=2, bg='#abcad9', fg="black",
-                                 font=("verdana", 8, "bold"))
+                                 font=("verdana", 8, "bold"), command=self.buscar_lancamentos)
         self.bot_buscar.place(relx=0.3, rely=0.80, relwidth=0.1, relheight=0.12)
 
         # botão apagar
@@ -288,26 +340,28 @@ class aplicacao(Funcoes):
         # botão entrada
         self.bot_entrada = Button(self.frame_1, text="INSERIR ENTRADA", bd=2, bg='#48ab4d', fg="black",
                                   font=("verdana", 8, "bold"), command=self.definir_tipo_entrada)
-        self.bot_entrada.place(relx=0.5, rely=0.65, relwidth=0.20, relheight=0.10)
+        self.bot_entrada.place(relx=0.5, rely=0.55, relwidth=0.20, relheight=0.15)
 
         # botão saida
         self.bot_saida = Button(self.frame_1, text="INSERIR SAIDA", bd=2, bg='#ab4848', fg="black",
                                 font=("verdana", 8, "bold"), command=self.definir_tipo_saida)
-        self.bot_saida.place(relx=0.25, rely=0.65, relwidth=0.20, relheight=0.10)
+        self.bot_saida.place(relx=0.25, rely=0.55, relwidth=0.20, relheight=0.15)
 
         # botão data
-        self.bot_data = Button(self.frame_1, text="Data", bd=2, bg='#abcad9', fg="black", font=("verdana", 8, "bold"),
+        self.bot_data = Button(self.frame_1, text="Data", bd=2, bg='#abcad9', fg="black", font=("verdana", 9, "bold"),
                                command=self.abrir_calendario)
         self.bot_data.place(relx=0.75, rely=0.30, relwidth=0.1, relheight=0.12)
+
+
 
         # Label = espaço de escrever/entrada
 
         # Label buscar
-        self.lb_buscar = Label(self.frame_1, text="Buscar", bg='#436778', fg="black", font=("verdana", 9, "bold"))
-        self.lb_buscar.place(relx=0.015, rely=0.01)
+        self.lb_buscar = Label(self.frame_1, text="Buscar", bg='#436778', fg="black", font=("verdana", 11, "bold"))
+        self.lb_buscar.place(relx=0.010, rely=0.01)
         # Texto da busca
         self.buscar_entry = Entry(self.frame_1)
-        self.buscar_entry.place(relx=0.01, rely=0.15, relwidth=0.1, relheight=0.15)
+        self.buscar_entry.place(relx=0.01, rely=0.15, relwidth=0.1, relheight=0.10)
 
         # Label nome
         self.lb_nome = Label(self.frame_1, text="Nome", bg='#436778', fg="black", font=("verdana", 11, "bold"))
@@ -318,11 +372,11 @@ class aplicacao(Funcoes):
         self.nome_entry.place(relx=0.15, rely=0.30, relwidth=0.25, relheight=0.10)
 
         # Label valor
-        self.lb_valor = Label(self.frame_1, text="Valor", bg='#436778', fg="black", font=("verdana", 9, "bold"))
-        self.lb_valor.place(relx=0.45, rely=0.42)
+        self.lb_valor = Label(self.frame_1, text="Valor", bg='#436778', fg="black", font=("verdana", 11, "bold"))
+        self.lb_valor.place(relx=0.50, rely=0.15)
         # Texto da valor
         self.valor_entry = Entry(self.frame_1)
-        self.valor_entry.place(relx=0.40, rely=0.53, relwidth=0.15, relheight=0.10)
+        self.valor_entry.place(relx=0.50, rely=0.3, relwidth=0.15, relheight=0.10)
 
     def lista_frame2(self):
         self.lanca_frame2 = ttk.Treeview(self.frame_2, height=3,
