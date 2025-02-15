@@ -12,7 +12,7 @@ class DashboardFinanceiro(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Dashboard Financeiro")
-        self.geometry("800x600")  # Ajustando a janela para um tamanho maior
+        self.geometry("600x400")  # Ajustando a janela para um tamanho maior
 
         # Definindo as cores principais com a paleta fornecida
         self.bg_cor = "#436778"  # Azul escuro
@@ -24,10 +24,10 @@ class DashboardFinanceiro(tk.Tk):
         self.title_cor = "#1e2a47"  # Cor do título (tom escuro de azul)
 
         # Configurando a cor de fundo da janela principal
-        self.config(bg=self.bg_janela)
+        self.config(bg=self.highlight_bg)
 
         # Adicionar seção para saldo
-        self.saldo_label = tk.Label(self, text="Saldo Atual: R$ 0.00", font=("Arial", 14), fg=self.text_cor, bg=self.bg_janela)
+        self.saldo_label = tk.Label(self, text="Saldo Atual: R$ 0.00", font=("Arial", 18), fg=self.btn_fg, bg=self.highlight_bg)
         self.saldo_label.pack(pady=10)
 
         # Botões para os gráficos
