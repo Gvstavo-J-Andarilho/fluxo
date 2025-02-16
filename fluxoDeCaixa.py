@@ -118,8 +118,8 @@ class Funcoes():
         self.lanca_frame2.delete(*self.lanca_frame2.get_children())
         self.conecta_bd()
         lista = self.cursor.execute("""
-        SELECT codigo, data, valor, tipo, nome, saldo FROM lancamento
-        ORDER BY codigo ASC;
+            SELECT codigo, data, valor, tipo, nome, saldo FROM lancamento
+            ORDER BY data ASC, codigo ASC;
         """)
         for i in lista:
             self.lanca_frame2.insert("", END, values=i)

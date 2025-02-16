@@ -9,12 +9,13 @@ from matplotlib.dates import DateFormatter
 
 
 class DashboardFinanceiro(tk.Tk):
+    #TODA PARTE VISUAL TÁ AQUI ENQUANTO RODA TÁ AQUI
     def __init__(self):
-        super().__init__() #iniciar janela
-        self.title("Dashboard Financeiro")
-        self.geometry("900x700")  # Ajuste para acomodar os gráficos e o botão
+        super().__init__() #iniciar janela onde estão todos os gráficos, a grande
+        self.title("Dashboard Financeiro") #nome da janela
+        self.geometry("450x350")  # Ajuste para acomodar os gráficos e o botão
 
-        # Definindo as cores principais
+        #Definindo as cores principais
         self.bg_cor = "#436778"
         self.highlight_bg = "#2c4c5c"
         self.bg_janela = "#f4f4f9"
@@ -24,15 +25,11 @@ class DashboardFinanceiro(tk.Tk):
         # Configurando a cor de fundo da janela principal
         self.config(bg=self.highlight_bg)
 
-        '''# Adicionar seção para saldo
-        self.saldo_label = tk.Label(self, text="Saldo Atual: R$ ", font=("Arial", 18), fg=self.bg_janela, bg=self.highlight_bg)
-        self.saldo_label.pack(pady=5) #distancia do que tá escrito em cima da borda superior'''
-
         # Frame/janela principal onde os gráficos serão dispostos
         self.frame_graficos = tk.Frame(self, bg=self.highlight_bg)
         self.frame_graficos.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Configurar grid para os gráficos
+        # Configurar grid/lugar para os gráficos
         self.frame_graficos.grid_rowconfigure(0, weight=1)
         self.frame_graficos.grid_rowconfigure(1, weight=1)
         self.frame_graficos.grid_columnconfigure(0, weight=1)
@@ -55,17 +52,13 @@ class DashboardFinanceiro(tk.Tk):
         self.botao_relatorio = tk.Button(self, text="Relatório Financeiro", command=self.gerar_relatorio, font=("Arial", 12), bg=self.bg_cor, fg="white")
         self.botao_relatorio.pack(pady=10)
 
-        # Atualizar o saldo ao iniciar
-        '''self.atualizar_saldo()'''
-        # Mostrar variação percentual no primeiro quadrado superior esquerdo
-        self.plot_variacao_percentual()
-
-        # Mostrar os gráficos
+        # Mostrar os gráficos na tela
         self.plot_linha()
         self.plot_barras()
         self.plot_pizza()
+        self.plot_variacao_percentual()
 
-    #Puxa os dados do banco de dados de lançamento do 'fluxo de caixa'
+    #Puxa os dados do 'banco de dados'(BD) de lançamento do 'fluxo de caixa'(FC)
     def conectar_bd(self):
         return sqlite3.connect('clientes.bd')
 
@@ -90,9 +83,8 @@ class DashboardFinanceiro(tk.Tk):
         largura_tela = self.winfo_width()
         altura_tela = self.winfo_height()
 
-        # Ajustando o gráfico com base no recuo de 20%
-        largura_ajustada = largura_tela * 0.35
-        altura_ajustada = altura_tela * 0.30
+        largura_ajustada = largura_tela * 0.25
+        altura_ajustada = altura_tela * 0.20
 
         conn = self.conectar_bd()
         cursor = conn.cursor()
@@ -101,43 +93,48 @@ class DashboardFinanceiro(tk.Tk):
         registros = cursor.fetchall()
         conn.close()
 
-        # Processar dados
         df = pd.DataFrame(registros, columns=['data', 'saldo'])
         df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y')
         df.sort_values(by='data', inplace=True)
-        df['mes_ano'] = df['data'].dt.to_period('M')
-        df = df.groupby('mes_ano')['saldo'].last().reset_index()  # Último saldo de cada mês
-        df['variacao'] = df['saldo'].pct_change() * 100  # Calcula a variação percentual
-        df.dropna(inplace=True)  # Remove o primeiro valor que será NaN
 
+        # Agrupar o saldo final de cada mês
+        df['mes_ano'] = df['data'].dt.to_period('M')
+        df = df.groupby('mes_ano')['saldo'].last().reset_index()
+
+        # Calcular a variação percentual mês a mês
+        df['variacao_percentual'] = df['saldo'].pct_change() * 100  # Variação percentual
+
+        # Remover valores NaN (primeiro mês não tem variação)
+        df.dropna(subset=['variacao_percentual'], inplace=True)
+
+        # Obter datas e variações
         datas = df['mes_ano'].dt.strftime('%Y-%m').tolist()
-        variacoes = df['variacao'].tolist()
+        variacoes_percentuais = df['variacao_percentual'].tolist()
         datas = [datetime.strptime(data, "%Y-%m") for data in datas]
 
         fig, ax = plt.subplots(figsize=(largura_ajustada / 100, altura_ajustada / 100))
+        ax.plot(datas, variacoes_percentuais, marker='o', linestyle='-', color='#1e2a47', label='Variação Percentual')
 
-        # Plotando a linha de variação percentual
-        ax.plot(datas, variacoes, marker='o', linestyle='-', color='#1e2a47', label='Variação %')
-        ax.axhline(0, color='gray', linestyle='--', linewidth=0.5)  # Linha de referência no zero
-
-        ax.set_title("Variação % do Saldo", fontsize=12, color=self.title_cor)
-        ax.set_ylabel("Variação %", fontsize=10, color=self.text_cor)
+        ax.set_title("Variação Percentual do Saldo", fontsize=12, color=self.title_cor)
+        ax.set_ylabel("Variação Percentual (%)", fontsize=10, color=self.text_cor)
         ax.xaxis.set_major_formatter(DateFormatter("%Y-%m"))
         ax.set_xticks(datas)
         ax.set_xticklabels([data.strftime("%Y-%m") for data in datas], rotation=0, fontsize=8, color=self.text_cor)
         ax.legend(fontsize=8)
 
-        # Remover gráficos anteriores para evitar sobreposição
+        # Adicionando o valor da variação percentual no gráfico
+        for i, v in enumerate(variacoes_percentuais):
+            ax.text(datas[i], v + 0.5, f"{v:.2f}%", ha='center', fontsize=8, color=self.text_cor)
+
+        # Atualizando o saldo na parte superior do gráfico
         for widget in self.frame_saldo.winfo_children():
             widget.destroy()
 
-        # Exibir o saldo atualizado acima do gráfico de variação percentual
-        saldo_atual = df['saldo'].iloc[-1]  # Pega o último saldo registrado
+        saldo_atual = df['saldo'].iloc[-1] if not df.empty else 0
         saldo_label = tk.Label(self.frame_saldo, text=f"Saldo Atual: R$ {saldo_atual:.2f}",
                                font=("Arial", 14), fg=self.title_cor, bg=self.bg_janela)
         saldo_label.pack(pady=5)
 
-        # Mostrar o gráfico logo abaixo do saldo
         self._show_plot(fig, self.frame_saldo)
 
     def plot_barras(self):
@@ -188,8 +185,8 @@ class DashboardFinanceiro(tk.Tk):
         altura_tela = self.winfo_height()
 
         # Ajustando o gráfico com base no recuo de 20%
-        largura_ajustada = largura_tela * 0.45
-        altura_ajustada = altura_tela * 0.40
+        largura_ajustada = largura_tela * 0.25
+        altura_ajustada = altura_tela * 0.20
 
         conn = self.conectar_bd()
         cursor = conn.cursor()
@@ -213,8 +210,8 @@ class DashboardFinanceiro(tk.Tk):
         largura_tela = self.winfo_width()
         altura_tela = self.winfo_height()
 
-        largura_ajustada = largura_tela * 0.35
-        altura_ajustada = altura_tela * 0.30
+        largura_ajustada = largura_tela * 0.25
+        altura_ajustada = altura_tela * 0.20
 
         conn = self.conectar_bd()
         cursor = conn.cursor()
